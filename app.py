@@ -1,4 +1,5 @@
 import requests
+from bs4 import BeautifulSoup
 
 class SecEdgar:
     def __init__(self,fileurl):
@@ -39,6 +40,10 @@ class SecEdgar:
         file_json = r.json()
         return file_json["facts"]
     
+    def __display_filing(self,htm_doc):
+        soup = BeautifulSoup(htm_doc, "lxml")
+        return soup.get_text()
+    
     def annual_filing(self,cik, year):
         facts_json = self.__fetch_facts(cik)
         shares_dicts = facts_json["dei"]["EntityCommonStockSharesOutstanding"]["units"]["shares"]
@@ -59,7 +64,7 @@ class SecEdgar:
         accn = accn.replace('-',"")
 
         doc = requests.get(f'https://www.sec.gov/Archives/edgar/data/{cik}/{accn}/{primaryDocument}', headers = self.headers).text
-        return doc
+        return self.__display_filing(doc)
 
 
 
