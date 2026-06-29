@@ -31,13 +31,37 @@ class SecEdgar:
     def ticker_to_cik(self,ticker):
         return self.ticker_dict[ticker.lower()]
     
-    def annual_filing(self,cik, year):
-        facts_json = self.__fetch_facts(cik)
-        #loop through lists of dicts
+    def __fetch_submissions(self,cik):
+        return requests.get(f'https://data.sec.gov/submissions/CIK{cik}.json',headers = self.headers).json()
+                
     def __fetch_facts(self,cik):
         r = requests.get(f'https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json',headers = self.headers)
         file_json = r.json()
         return file_json["facts"]
+    
+    def annual_filing(self,cik, year):
+        facts_json = self.__fetch_facts(cik)
+        shares_dicts = facts_json["dei"]["EntityCommonStockSharesOutstanding"]["units"]["shares"]
+        accn = ""
+        for dicts in shares_dicts:
+            if dicts['fy'] == year and dicts['form'] == '10-K':
+                accn = dicts['accn']
+                break
+        
+        submissions = self.__fetch_submissions(cik)['filings']['recent']
+
+        primaryDocument = None
+        for index,num in enumerate(submissions['accessionNumber']):
+            if num == accn:
+                primaryDocument = submissions['primaryDocument'][index]
+                break
+        
+        accn = accn.replace('-',"")
+
+        doc = requests.get(f'https://www.sec.gov/Archives/edgar/data/{cik}/{accn}/{primaryDocument}', headers = self.headers).text
+        return doc
+
+
 
 
 
@@ -45,6 +69,6 @@ class SecEdgar:
 
 
 se = SecEdgar('https://www.sec.gov/files/company_tickers.json')
-print(se.ticker_to_cik('NOFCF'))
-print(se.name_to_cik('dsg global inc.'))
-#se.fetch_facts('0000320193')
+#print(se.ticker_to_cik('NOFCF'))
+#print(se.name_to_cik('dsg global inc.'))
+print(se.annual_filing('0000320193',2021))
