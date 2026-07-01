@@ -44,14 +44,17 @@ class SecEdgar:
         soup = BeautifulSoup(htm_doc, "lxml")
         return soup.get_text()
     
-    def annual_filing(self,cik, year):
+    def annual_filing(self,cik, year,form):
         facts_json = self.__fetch_facts(cik)
         shares_dicts = facts_json["dei"]["EntityCommonStockSharesOutstanding"]["units"]["shares"]
         accn = ""
         for dicts in shares_dicts:
-            if dicts['fy'] == year and dicts['form'] == '10-K':
-                accn = dicts['accn']
-                break
+            if form == "10-K":
+                if dicts['fy'] == year and dicts['form'] == form:
+                    accn = dicts['accn']
+                    break
+            else:
+
         
         submissions = self.__fetch_submissions(cik)['filings']['recent']
 
@@ -70,7 +73,8 @@ class SecEdgar:
 
 
 
-    #def quarterly_filing(cik, year, quarter):
+    def quarterly_filing(cik, year, quarter):
+
 
 
 se = SecEdgar('https://www.sec.gov/files/company_tickers.json')
