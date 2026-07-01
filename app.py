@@ -44,17 +44,14 @@ class SecEdgar:
         soup = BeautifulSoup(htm_doc, "lxml")
         return soup.get_text()
     
-    def annual_filing(self,cik, year,form):
+    def annual_filing(self,cik, year):
         facts_json = self.__fetch_facts(cik)
         shares_dicts = facts_json["dei"]["EntityCommonStockSharesOutstanding"]["units"]["shares"]
         accn = ""
         for dicts in shares_dicts:
-            if form == "10-K":
-                if dicts['fy'] == year and dicts['form'] == form:
+            if dicts['fy'] == year and dicts['form'] == '10-K':
                     accn = dicts['accn']
                     break
-            else:
-
         
         submissions = self.__fetch_submissions(cik)['filings']['recent']
 
@@ -71,13 +68,29 @@ class SecEdgar:
 
 
 
+    def quarterly_filing(self,cik, year, quarter):
+        facts_json = self.__fetch_facts(cik)
+        shares_dicts = facts_json["dei"]["EntityCommonStockSharesOutstanding"]["units"]["shares"]
+        accn = ""
+        for dicts in shares_dicts:
+            if dicts['fy'] == year and dicts['form'] == '10-Q' and dicts['fp'] == quarter:
+                    accn = dicts['accn']
+                    break
+        submissions = self.__fetch_submissions(cik)['filings']['recent']
 
+        primaryDocument = None
+        for index,num in enumerate(submissions['accessionNumber']):
+            if num == accn:
+                primaryDocument = submissions['primaryDocument'][index]
+                break
+        
+        accn = accn.replace('-',"")
 
-    def quarterly_filing(cik, year, quarter):
-
-
+        doc = requests.get(f'https://www.sec.gov/Archives/edgar/data/{cik}/{accn}/{primaryDocument}', headers = self.headers).text
+        return self.__display_filing(doc)
 
 se = SecEdgar('https://www.sec.gov/files/company_tickers.json')
 #print(se.ticker_to_cik('NOFCF'))
 #print(se.name_to_cik('dsg global inc.'))
-print(se.annual_filing('0000320193',2021))
+#print(se.annual_filing('0000320193',2021))
+print(se.quarterly_filing('0000320193', 2021, 'Q3'))
